@@ -1,0 +1,33 @@
+services:
+  linkstack:
+    image: 'linkstackorg/linkstack:latest'
+    container_name: linkstack
+    networks:
+      - traefik-vnet
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.linkstack-https.tls=true
+      - traefik.http.routers.linkstack-https.tls.certresolver=cloudflare
+      - traefik.http.routers.linkstack-https.entrypoints=websecure
+      - traefik.http.routers.linkstack-https.rule=Host(`socials.enrico.es`)
+    environment:
+      TZ: 'Europe/Madrid'
+      SERVER_ADMIN: 'enkirro98@gmail.com'
+      HTTP_SERVER_NAME: 'socials.enrico.es'
+      HTTPS_SERVER_NAME: 'socials.enrico.es'
+      LOG_LEVEL: 'info'
+      PHP_MEMORY_LIMIT: '256M'
+      UPLOAD_MAX_FILESIZE: '8M'
+    volumes:
+      - linkstack_persistent:/htdocs
+    restart: unless-stopped
+networks:
+  traefik-vnet:
+    external: true
+volumes:
+  linkstack_persistent:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./data

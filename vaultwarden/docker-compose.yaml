@@ -1,0 +1,45 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    networks:
+      - traefik-vnet
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vaultwarden-https.tls=true
+      - traefik.http.routers.vaultwarden-https.tls.certresolver=cloudflare
+      - traefik.http.routers.vaultwarden-https.entrypoints=websecure
+      - traefik.http.routers.vaultwarden-https.rule=Host(`vaultwarden.enrico.es`)
+    restart: aunless-stopped
+    env_file:
+      - .env
+    environment:
+      ADMIN_TOKEN: "${ADMIN_TOKEN}"
+      DATABASE_URL: "mysql://mysqldbuser_vaultwarden:${MYSQL_PASSWORD}@vaultwarden-mysql:3306/vaultwarden-prod"
+      WEBSOCKET_ENABLED: true
+      SIGNUPS_ALLOWED: false ##Set True para registrarse en la web
+      DOMAIN: https://vaultwarden.enrico.es
+    volumes:
+      - ./data:/data:rw
+    depends_on:
+      - vaultwarden-mysql
+
+  vaultwarden-mysql:
+    image: mysql:8.4
+    container_name: vaultwarden-mysql
+    networks:
+      - traefik-vnet
+    restart: always
+    env_file:
+      - .env
+    environment:
+      MYSQL_DATABASE: vaultwarden-prod
+      MYSQL_USER: mysqldbuser_vaultwarden
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+    volumes:
+      - ./vaultwarden-db:/var/lib/mysql:rw
+    command: --default-storage-engine innodb
+networks:
+  traefik-vnet:
+    external: true
