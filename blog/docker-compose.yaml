@@ -23,10 +23,11 @@ services:
     volumes:
       - ./data:/var/lib/ghost/content:rw
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
   mysql:
-    image: mysql:8.4
+    image: mysql:8.4.5
     container_name: mysql
     networks:
       - traefik-vnet
@@ -40,6 +41,13 @@ services:
       MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
     volumes:
       - ./ghost-db:/var/lib/mysql:rw
+      - ./config/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 networks:
   traefik-vnet:
     external: true
